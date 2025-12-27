@@ -1,0 +1,8 @@
+start: prepare
+    bun run start
+
+prepare: install-modules
+
+[private]
+install-modules:
+    bun install

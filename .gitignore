@@ -272,3 +272,6 @@ iOSInjectionProject/
 **/xcshareddata/WorkspaceSettings.xcsettings
 
 # End of https://www.toptal.com/developers/gitignore/api/swift,xcode,macos,node
+
+# GraphQL Code Generator
+server/src/graphql/generated/

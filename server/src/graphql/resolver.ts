@@ -5,19 +5,7 @@ import type {RootResolver} from '@hono/graphql-server';
 import type {HonoContext} from '../context';
 import {type GraphQLResolveInfo} from 'graphql';
 import {isFieldRequested} from './utils';
-
-interface Author {
-    id: string;
-    name: string;
-    books?: Book[];
-}
-
-interface Book {
-    id: string;
-    title: string;
-    authorId: string;
-    author?: Author;
-}
+import type {Author, Book} from './generated/types';
 
 const authors: Author[] = [
     {id: '1', name: 'Kate Chopin'},
@@ -28,20 +16,6 @@ const books: Book[] = [
     {id: '1', title: 'The Awakening', authorId: '1'},
     {id: '2', title: 'City of Glass', authorId: '2'},
 ];
-
-function getAuthorsBooks(author: Pick<Author, 'id'>, options?: {excludingBook?: Pick<Book, 'id'>}): Book[] {
-    const excludingBook = options?.excludingBook;
-
-    return books.filter(book => {
-        const isFromAuthor = book.authorId === author.id;
-        if (!excludingBook) return isFromAuthor;
-        return isFromAuthor && book.id !== excludingBook.id;
-    });
-}
-
-function sortBooks(books: Book[]): Book[] {
-    return books.toSorted((a, b) => Number(a.id) - Number(b.id));
-}
 
 function resolveBooks(info: GraphQLResolveInfo, ...parentFields: string[]): Book[] {
     const unwrappedParentFields = parentFields ?? [];
@@ -60,11 +34,11 @@ function resolveBooks(info: GraphQLResolveInfo, ...parentFields: string[]): Book
         const mappedBook: Book = {...book, author};
         if (!authorBooksRequested) return mappedBook;
 
-        const otherBooks = getAuthorsBooks(author, {excludingBook: mappedBook});
-        const authorBooks = sortBooks([mappedBook].concat(otherBooks));
-        const bookWithAuthorBooks: Book = {...mappedBook, author: {...mappedBook.author!, books: authorBooks}};
+        const authorBooks = [mappedBook]
+            .concat(books.filter(({authorId, id}) => authorId === author.id && id !== mappedBook.id))
+            .toSorted((a, b) => Number(a.id) - Number(b.id));
 
-        return bookWithAuthorBooks;
+        return {...mappedBook, author: {...author, books: authorBooks}};
     });
 }
 

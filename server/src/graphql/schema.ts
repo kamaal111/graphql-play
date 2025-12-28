@@ -4,7 +4,7 @@ const schema = buildSchema(/* GraphQL */ `
     type Book {
         id: String!
         title: String!
-        author: Author!
+        author: Author
         authorId: String!
     }
 

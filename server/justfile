@@ -1,7 +1,10 @@
 dev: prepare
     bun run dev
 
-prepare: install-modules
+generate:
+    bun run codegen
+
+prepare: install-modules generate
 
 [private]
 install-modules:

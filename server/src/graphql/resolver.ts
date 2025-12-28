@@ -1,13 +1,94 @@
+import assert from 'node:assert/strict';
+
 import type {RootResolver} from '@hono/graphql-server';
 
 import type {HonoContext} from '../context';
+import {type GraphQLResolveInfo} from 'graphql';
+import {isFieldRequested} from './utils';
 
-const resolver: RootResolver = (_c: HonoContext) => {
+interface Author {
+    id: string;
+    name: string;
+    books?: Book[];
+}
+
+interface Book {
+    id: string;
+    title: string;
+    authorId: string;
+    author?: Author;
+}
+
+const authors: Author[] = [
+    {id: '1', name: 'Kate Chopin'},
+    {id: '2', name: 'Paul Auster'},
+];
+
+const books: Book[] = [
+    {id: '1', title: 'The Awakening', authorId: '1'},
+    {id: '2', title: 'City of Glass', authorId: '2'},
+];
+
+function getAuthorsBooks(author: Pick<Author, 'id'>, options?: {excludingBook?: Pick<Book, 'id'>}): Book[] {
+    const excludingBook = options?.excludingBook;
+
+    return books.filter(book => {
+        const isFromAuthor = book.authorId === author.id;
+        if (!excludingBook) return isFromAuthor;
+        return isFromAuthor && book.id !== excludingBook.id;
+    });
+}
+
+function sortBooks(books: Book[]): Book[] {
+    return books.toSorted((a, b) => Number(a.id) - Number(b.id));
+}
+
+function resolveBooks(info: GraphQLResolveInfo, ...parentFields: string[]): Book[] {
+    const unwrappedParentFields = parentFields ?? [];
+    const authorRequested = isFieldRequested(info, ...unwrappedParentFields.concat(['author']));
+    if (!authorRequested) return books;
+
+    const selectedAuthors = resolveAuthors(info, ...unwrappedParentFields.concat(['author'])).reduce<
+        Record<string, Author>
+    >((acc, author) => ({...acc, [author.id]: author}), {});
+    const authorBooksRequested = isFieldRequested(info, ...unwrappedParentFields.concat(['author', 'books']));
+
+    return books.map(book => {
+        const author = selectedAuthors[book.authorId];
+        assert(author != null);
+
+        const mappedBook: Book = {...book, author};
+        if (!authorBooksRequested) return mappedBook;
+
+        const otherBooks = getAuthorsBooks(author, {excludingBook: mappedBook});
+        const authorBooks = sortBooks([mappedBook].concat(otherBooks));
+        const bookWithAuthorBooks: Book = {...mappedBook, author: {...mappedBook.author!, books: authorBooks}};
+
+        return bookWithAuthorBooks;
+    });
+}
+
+function resolveAuthors(info: GraphQLResolveInfo, ...parentFields: string[]): Author[] {
+    const unwrappedParentFields = parentFields ?? [];
+    const booksAreRequested = isFieldRequested(info, ...unwrappedParentFields.concat(['books']));
+    if (!booksAreRequested) return authors;
+
+    const resolvedBooks = Object.groupBy(
+        resolveBooks(info, ...unwrappedParentFields.concat(['books'])),
+        ({authorId}) => authorId
+    );
+
+    return authors.map(author => {
+        const books = resolvedBooks[author.id] ?? [];
+
+        return {...author, books: books};
+    });
+}
+
+const resolver: RootResolver = () => {
     return {
-        addTwoNumbers: (args: {a: number; b: number}) => {
-            console.log('🐸🐸🐸 args', args);
-            return args.a + args.b;
-        },
+        books: (_params: unknown, _c: HonoContext, info: GraphQLResolveInfo) => resolveBooks(info),
+        authors: (_params: unknown, _c: HonoContext, info: GraphQLResolveInfo) => resolveAuthors(info),
     };
 };
 

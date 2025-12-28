@@ -5,19 +5,25 @@
     "description": "",
     "main": "src/main",
     "scripts": {
-        "start": "bun run ."
+        "dev": "bun run --watch ."
     },
     "keywords": [],
     "author": "Kamaal Farah",
     "license": "ISC",
     "dependencies": {
-        "grafast": "^1.0.0-rc.3",
-        "graphql": "^16.12.0"
+        "@apollo/server": "^5.2.0",
+        "@hono/graphql-server": "^0.7.0",
+        "drizzle-orm": "^0.45.1",
+        "graphql": "^16.12.0",
+        "hono": "^4.11.3",
+        "pg": "^8.16.3"
     },
     "devDependencies": {
         "@tsconfig/node-ts": "^23.6.2",
         "@tsconfig/node24": "^24.0.3",
         "@types/bun": "^1.3.5",
+        "@types/pg": "^8.16.0",
+        "drizzle-kit": "^0.31.8",
         "typescript": "^5.9.3"
     }
 }

@@ -1,5 +1,5 @@
-start: prepare
-    bun run start
+dev: prepare
+    bun run dev
 
 prepare: install-modules
 

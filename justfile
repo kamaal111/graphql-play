@@ -1,2 +1,5 @@
-start-server:
-    just server/start
+dev-server:
+    just server/dev
+
+prepare:
+    just server/prepare

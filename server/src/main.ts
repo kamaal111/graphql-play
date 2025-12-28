@@ -1,14 +1,13 @@
-import {grafast} from 'grafast';
+import {Hono} from 'hono';
+import {showRoutes} from 'hono/dev';
 
-import schema from './schema';
+import {withContext} from './context';
+import graphqlRouter from './graphql/router';
 
-const result = await grafast({
-    schema,
-    source: /* GraphQL */ `
-        {
-            addTwoNumbers(a: 40, b: 2)
-        }
-    `,
-});
+const app = withContext(new Hono());
 
-console.log(JSON.stringify(result, null, 2));
+app.route('/graphql', graphqlRouter);
+
+showRoutes(app, {verbose: false});
+
+export default app;
